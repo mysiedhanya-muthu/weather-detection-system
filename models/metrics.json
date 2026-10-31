@@ -1,0 +1,75 @@
+{
+  "dataset_samples": 6000,
+  "test_samples": 1200,
+  "features": [
+    "temperature",
+    "humidity",
+    "heat_index",
+    "precip_24h",
+    "precip_rate_max",
+    "soil_saturation",
+    "wind_speed",
+    "wind_gusts",
+    "pressure",
+    "pressure_drop_3h"
+  ],
+  "classes": [
+    "Low",
+    "Moderate",
+    "High",
+    "Severe"
+  ],
+  "models": {
+    "heavy_rainfall": {
+      "algorithm": "RandomForestClassifier",
+      "accuracy": 0.9983,
+      "f1_score": 0.9983,
+      "feature_importances": {
+        "temperature": 0.0047,
+        "humidity": 0.0049,
+        "heat_index": 0.0048,
+        "precip_24h": 0.4661,
+        "precip_rate_max": 0.3722,
+        "soil_saturation": 0.0951,
+        "wind_speed": 0.0044,
+        "wind_gusts": 0.0043,
+        "pressure": 0.014,
+        "pressure_drop_3h": 0.0295
+      }
+    },
+    "extreme_heat": {
+      "algorithm": "RandomForestClassifier",
+      "accuracy": 1.0,
+      "f1_score": 1.0,
+      "feature_importances": {
+        "temperature": 0.3172,
+        "humidity": 0.0394,
+        "heat_index": 0.6203,
+        "precip_24h": 0.0028,
+        "precip_rate_max": 0.003,
+        "soil_saturation": 0.0025,
+        "wind_speed": 0.0037,
+        "wind_gusts": 0.0035,
+        "pressure": 0.0037,
+        "pressure_drop_3h": 0.004
+      }
+    },
+    "flood_risk": {
+      "algorithm": "GradientBoostingClassifier",
+      "accuracy": 0.9783,
+      "f1_score": 0.9784,
+      "feature_importances": {
+        "temperature": 0.0013,
+        "humidity": 0.0016,
+        "heat_index": 0.0007,
+        "precip_24h": 0.7649,
+        "precip_rate_max": 0.0807,
+        "soil_saturation": 0.1432,
+        "wind_speed": 0.002,
+        "wind_gusts": 0.0014,
+        "pressure": 0.0013,
+        "pressure_drop_3h": 0.0027
+      }
+    }
+  }
+}

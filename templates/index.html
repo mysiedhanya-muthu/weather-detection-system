@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Weather Disaster Early Warning System | Real-Time Climate Hazard Dashboard</title>
+  <meta name="description" content="AI-Powered Weather Disaster Early Warning System analyzing real-time meteorological data using Scikit-Learn to detect heavy rainfall, extreme heatwaves, and flood risks.">
+  <meta name="keywords" content="AI weather warning, disaster early warning system, flash flood risk, extreme heat monitor, machine learning weather, Open-Meteo">
+  <meta name="author" content="AI Disaster Risk Intelligence">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Dynamic Ambient Climate Backdrop -->
+  <div class="weather-ambient-backdrop" style="background-image: url('/static/images/weather_clear.jpg');"></div>
+  <div class="weather-overlay-gradient"></div>
+
+  <!-- Smart Alerts Bar -->
+  <aside id="alertBanner" class="alert-banner-container" aria-label="Disaster Warning Broadcast">
+    <div class="alert-banner-inner">
+      <div class="alert-banner-content">
+        <span class="alert-pulse-icon">🚨</span>
+        <div id="alertBannerText" class="alert-banner-text">
+          <strong>Heavy Rainfall Advisory:</strong> Precipitation exceeds safety thresholds.
+        </div>
+      </div>
+      <div class="alert-banner-actions">
+        <button id="btnToggleSiren" class="btn-audio-siren" aria-label="Toggle siren sound">🔔 Audio Siren</button>
+        <button class="btn-alert-action" onclick="document.getElementById('alertBanner').style.display='none'">Dismiss</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Top Navigation Header -->
+  <header class="navbar">
+    <div class="container nav-content">
+      <a href="#" class="brand" aria-label="Home">
+        <div class="brand-icon-wrapper">🌩️</div>
+        <div class="brand-text">
+          <h1>ClimaShield AI</h1>
+          <span>Weather Disaster Early Warning System</span>
+        </div>
+      </a>
+
+      <div class="nav-center">
+        <div class="ai-status-pill">
+          <span class="pulse-dot"></span>
+          <span>Scikit-Learn ML Active (99.8% Acc)</span>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <button id="btnOpenMetricsModal" class="btn-nav-primary" id="btnMetrics" title="Inspect Model Metrics">
+          <span>📊</span> Model Transparency
+        </button>
+        <button id="btnThemeToggle" class="btn-icon" aria-label="Toggle Light/Dark Theme" title="Toggle Theme">
+          ☀️
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    
+    <!-- Hero & Location Search Section -->
+    <section class="hero-section" aria-labelledby="searchHeading">
+      <div class="search-hub-card">
+        <form id="searchForm" class="search-input-wrapper" role="search">
+          <span class="search-icon">🔍</span>
+          <input 
+            type="text" 
+            id="citySearchInput" 
+            class="search-input" 
+            placeholder="Search city or region globally (e.g., Tokyo, Mumbai, Miami, London, Cairo)..." 
+            autocomplete="off"
+            aria-label="Search city for weather hazard risk analysis"
+          >
+          <span id="searchSpinner" style="display:none; color: #38bdf8; font-size: 0.9rem;">🌀</span>
+          <button type="button" id="btnClearSearch" class="btn-clear-search" aria-label="Clear search input">✕</button>
+          <button type="button" id="btnLocate" class="btn-search-locate" aria-label="Detect current location">
+            📍 My Location
+          </button>
+          <button type="submit" id="btnSearchSubmit" class="btn-search-submit">
+            Assess Risk
+          </button>
+        </form>
+
+        <!-- Autocomplete Suggestions -->
+        <div id="autocompleteDropdown" class="autocomplete-dropdown" role="listbox"></div>
+
+        <!-- Global Hotspots Pills -->
+        <div class="hotspots-row">
+          <span class="hotspots-label">Global Hazard Hotspots:</span>
+          <button class="hotspot-pill active" data-city="Tokyo" data-country="Japan" data-lat="35.6762" data-lon="139.6503">🇯🇵 Tokyo</button>
+          <button class="hotspot-pill" data-city="Mumbai" data-country="India" data-lat="19.0760" data-lon="72.8777">🇮🇳 Mumbai</button>
+          <button class="hotspot-pill" data-city="Miami" data-country="United States" data-lat="25.7617" data-lon="-80.1918">🇺🇸 Miami</button>
+          <button class="hotspot-pill" data-city="London" data-country="United Kingdom" data-lat="51.5074" data-lon="-0.1278">🇬🇧 London</button>
+          <button class="hotspot-pill" data-city="Manila" data-country="Philippines" data-lat="14.5995" data-lon="120.9842">🇵🇭 Manila</button>
+          <button class="hotspot-pill" data-city="Cairo" data-country="Egypt" data-lat="30.0444" data-lon="31.2357">🇪🇬 Cairo</button>
+          <button class="hotspot-pill" data-city="Sydney" data-country="Australia" data-lat="-33.8688" data-lon="151.2093">🇦🇺 Sydney</button>
+          <button class="hotspot-pill" data-city="New York" data-country="United States" data-lat="40.7128" data-lon="-74.0060">🇺🇸 New York</button>
+          <button class="hotspot-pill" data-city="Jakarta" data-country="Indonesia" data-lat="-6.2088" data-lon="106.8456">🇮🇩 Jakarta</button>
+          <button class="hotspot-pill" data-city="Houston" data-country="United States" data-lat="29.7604" data-lon="-95.3698">🇺🇸 Houston</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Dashboard Row: Current Weather & Climate Imagery + AI Risk Assessment -->
+    <section class="dashboard-grid" aria-label="Disaster Analysis Dashboard">
+      
+      <!-- Left Column: Live Weather & Dynamic Climate Photo -->
+      <article class="glass-card">
+        <div class="card-header-flex">
+          <div class="card-title-group">
+            <span class="card-icon">📡</span>
+            <h2>Live Weather Observations</h2>
+          </div>
+          <span class="card-badge" id="sourceBadge">Open-Meteo High-Res API</span>
+        </div>
+
+        <div class="current-weather-hero">
+          <div>
+            <div class="city-meta">
+              <h2 id="displayCity">Tokyo, Japan</h2>
+              <div id="displayCoords" class="coordinates">Lat: 35.68°, Lon: 139.65° · Updated just now</div>
+            </div>
+
+            <div class="temp-large-display">
+              <span id="displayTemp" class="temp-number">22</span>
+              <span class="temp-unit">°C</span>
+            </div>
+
+            <div class="condition-summary">
+              <span id="displayConditionIcon" class="condition-icon">🌤️</span>
+              <span id="displayConditionDesc">Partly Cloudy</span>
+            </div>
+
+            <div id="displayFeelsLike" class="feels-like-text">
+              Feels like 22.4°C · Heat Index 23.0°C
+            </div>
+          </div>
+
+          <!-- Dynamic Climate Image Showcase -->
+          <div class="climate-picture-card">
+            <img id="climatePhoto" class="climate-img-element" src="/static/images/weather_clear.jpg" alt="Current Climate Scenario Picture">
+            <div class="climate-caption-overlay">
+              <div class="climate-caption-text">
+                <span>Climate Environment</span>
+                <strong id="climatePhotoDesc">Clear sky atmospheric landscape</strong>
+              </div>
+              <div id="climatePhotoBadge" class="climate-badge">22°C · CLEAR</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Core Meteorological Parameter Tiles -->
+        <div class="metrics-grid-4">
+          <div class="metric-tile">
+            <div class="metric-tile-header">
+              <span>24h Rainfall</span>
+              <i>💧</i>
+            </div>
+            <div id="metricPrecip" class="metric-val">12.4 mm</div>
+            <div id="metricPrecipSub" class="metric-sub">Peak rate ~3.2 mm/h</div>
+          </div>
+
+          <div class="metric-tile">
+            <div class="metric-tile-header">
+              <span>Wind Speed</span>
+              <i>💨</i>
+            </div>
+            <div id="metricWind" class="metric-val">18.5 km/h</div>
+            <div id="metricWindSub" class="metric-sub">Gusts up to 28 km/h</div>
+          </div>
+
+          <div class="metric-tile">
+            <div class="metric-tile-header">
+              <span>Humidity</span>
+              <i>💧</i>
+            </div>
+            <div id="metricHumidity" class="metric-val">58%</div>
+            <div id="metricHumiditySub" class="metric-sub">Soil saturation ~42%</div>
+          </div>
+
+          <div class="metric-tile">
+            <div class="metric-tile-header">
+              <span>Pressure</span>
+              <i>⏱️</i>
+            </div>
+            <div id="metricPressure" class="metric-val">1014 hPa</div>
+            <div id="metricPressureSub" class="metric-sub">3h delta: +0.4 hPa</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Right Column: AI Multi-Hazard Risk Assessment Console -->
+      <article class="glass-card">
+        <div class="card-header-flex">
+          <div class="card-title-group">
+            <span class="card-icon">🧠</span>
+            <h2>AI Disaster Risk Assessment</h2>
+          </div>
+          <span class="card-badge" id="mlModelBadge">Ensemble Model</span>
+        </div>
+
+        <!-- Threat Meter -->
+        <div class="risk-meter-container">
+          <div id="riskScoreCircle" class="risk-score-circle">
+            <span id="riskScoreNum" class="score-num">28</span>
+            <span class="score-label">Threat Index</span>
+          </div>
+
+          <div class="risk-level-summary">
+            <h3 id="riskLevelText" style="color: #10b981;">Low Hazard Risk</h3>
+            <p id="riskSummaryDesc">
+              Atmospheric parameters remain benign and within manageable civil margins.
+            </p>
+            <div id="riskConfidenceText" class="confidence-indicator">
+              ML Ensemble Validated · Confidence 99.2%
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Core Hazards Grid -->
+        <div class="hazard-cards-3">
+          <!-- Heavy Rainfall -->
+          <div class="hazard-card" id="cardRainRisk">
+            <span id="badgeRainRisk" class="hazard-badge badge-low">Low Risk</span>
+            <h4>Heavy Rainfall</h4>
+            <div id="statRainRisk" class="hazard-stat">12.4 mm in 24h</div>
+          </div>
+
+          <!-- Extreme Heat -->
+          <div class="hazard-card" id="cardHeatRisk">
+            <span id="badgeHeatRisk" class="hazard-badge badge-low">Low Risk</span>
+            <h4>Extreme Heat</h4>
+            <div id="statHeatRisk" class="hazard-stat">Heat Index 23.0°C</div>
+          </div>
+
+          <!-- Flood Risk Exploration -->
+          <div class="hazard-card" id="cardFloodRisk">
+            <span id="badgeFloodRisk" class="hazard-badge badge-low">Low Risk</span>
+            <h4>Flood Risk</h4>
+            <div id="statFloodRisk" class="hazard-stat">Soil Saturation 42%</div>
+          </div>
+        </div>
+
+        <!-- AI Explainability & Contributing Factors -->
+        <div class="explain-section">
+          <div class="explain-header">
+            <h4><span>⚖️</span> Meteorological Factor Contribution</h4>
+            <span style="font-size: 0.72rem; color: #94a3b8;">Feature Impact Weighting</span>
+          </div>
+
+          <div id="explainFactorsList">
+            <!-- Dynamically populated factor bars -->
+          </div>
+
+          <div id="naturalExplanationText" class="natural-explanation-box">
+            The AI Hazard Model assessed an overall LOW risk for Tokyo based on normal precipitation and ambient thermal equilibrium.
+          </div>
+        </div>
+      </article>
+
+    </section>
+
+    <!-- Persona-Specific Safety Recommendations -->
+    <section style="margin-top: 24px;" aria-labelledby="safetyProtocolsHeading">
+      <div class="glass-card">
+        <div class="card-header-flex">
+          <div class="card-title-group">
+            <span class="card-icon">🛡️</span>
+            <h2 id="safetyProtocolsHeading">Actionable Safety Recommendations & Disaster Preparedness</h2>
+          </div>
+          <span class="card-badge">Persona-Adaptive Guidance</span>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs-navigation" role="tablist">
+          <button class="tab-btn active" data-tab="tabPaneGeneral" role="tab">👥 General Public</button>
+          <button class="tab-btn" data-tab="tabPaneFarmers" role="tab">🌾 Farmers & Agriculture</button>
+          <button class="tab-btn" data-tab="tabPaneTravelers" role="tab">🚗 Travelers & Commuters</button>
+          <button class="tab-btn" data-tab="tabPaneStudents" role="tab">🎒 Students & Community</button>
+        </div>
+
+        <!-- Tab Contents -->
+        <div id="tabPaneGeneral" class="tab-pane active" role="tabpanel"></div>
+        <div id="tabPaneFarmers" class="tab-pane" role="tabpanel"></div>
+        <div id="tabPaneTravelers" class="tab-pane" role="tabpanel"></div>
+        <div id="tabPaneStudents" class="tab-pane" role="tabpanel"></div>
+      </div>
+    </section>
+
+    <!-- Forecast Visualizations & Hydrological Trends (Chart.js) -->
+    <section style="margin-top: 24px;" aria-labelledby="forecastHeading">
+      <div class="glass-card">
+        <div class="card-header-flex">
+          <div class="card-title-group">
+            <span class="card-icon">📈</span>
+            <h2 id="forecastHeading">Meteorological Trends & 7-Day Outlook</h2>
+          </div>
+          <span class="card-badge">Real-Time Forecast Telemetry</span>
+        </div>
+
+        <div class="charts-grid-2">
+          <div>
+            <h4 style="font-size: 0.9rem; color: #93c5fd; margin-bottom: 10px;">24-Hour Temperature & Hourly Rain Curve</h4>
+            <div class="chart-wrapper">
+              <canvas id="hourlyForecastChart"></canvas>
+            </div>
+          </div>
+
+          <div>
+            <h4 style="font-size: 0.9rem; color: #93c5fd; margin-bottom: 10px;">7-Day High/Low Temperatures & Accumulated Rain</h4>
+            <div class="chart-wrapper">
+              <canvas id="dailyTrendChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Weather Risk Map (Leaflet.js) -->
+    <section style="margin-top: 24px;" aria-labelledby="mapHeading">
+      <div class="glass-card">
+        <div class="card-header-flex">
+          <div class="card-title-group">
+            <span class="card-icon">🗺️</span>
+            <h2 id="mapHeading">Global Weather Hazard Risk Map</h2>
+          </div>
+          <span class="card-badge">Pulsating Hazard Hotspots</span>
+        </div>
+
+        <div class="map-container-box">
+          <div class="map-controls-overlay">
+            <button id="btnLayerPins" class="btn-map-layer active">📍 Hazard Pins</button>
+            <button id="btnLayerRadar" class="btn-map-layer">🌧️ Radar Cloud Simulation</button>
+          </div>
+          <div id="disasterMap"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Disaster Simulation Sandbox ("What-If" Scenario Simulator) -->
+    <section style="margin-top: 24px;" aria-labelledby="sandboxHeading">
+      <div class="glass-card">
+        <div class="card-header-flex">
+          <div class="card-title-group">
+            <span class="card-icon">🧪</span>
+            <h2 id="sandboxHeading">Disaster Simulation Sandbox ("What-If" Scenario Simulator)</h2>
+          </div>
+          <span class="card-badge">Live ML Inference Playground</span>
+        </div>
+
+        <div class="simulator-grid">
+          <!-- Left: Sliders & Presets -->
+          <div>
+            <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 18px;">
+              Adjust weather variables to observe how our Scikit-Learn Machine Learning models dynamically shift hazard risk categories in real time.
+            </p>
+
+            <!-- Temperature Slider -->
+            <div class="slider-group">
+              <div class="slider-meta">
+                <span>Ambient Temperature (°C)</span>
+                <span id="simTempVal" class="slider-val-badge">28 °C</span>
+              </div>
+              <input type="range" id="simTemp" class="custom-range" min="-10" max="50" value="28" step="1">
+            </div>
+
+            <!-- Humidity Slider -->
+            <div class="slider-group">
+              <div class="slider-meta">
+                <span>Relative Humidity (%)</span>
+                <span id="simHumidityVal" class="slider-val-badge">60 %</span>
+              </div>
+              <input type="range" id="simHumidity" class="custom-range" min="15" max="100" value="60" step="1">
+            </div>
+
+            <!-- 24h Rainfall Slider -->
+            <div class="slider-group">
+              <div class="slider-meta">
+                <span>24-Hour Accumulated Rainfall (mm)</span>
+                <span id="simPrecipVal" class="slider-val-badge">15 mm</span>
+              </div>
+              <input type="range" id="simPrecip" class="custom-range" min="0" max="250" value="15" step="1">
+            </div>
+
+            <!-- Wind Gusts Slider -->
+            <div class="slider-group">
+              <div class="slider-meta">
+                <span>Wind Gust Velocity (km/h)</span>
+                <span id="simWindVal" class="slider-val-badge">25 km/h</span>
+              </div>
+              <input type="range" id="simWind" class="custom-range" min="0" max="180" value="25" step="1">
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="preset-pills">
+              <span style="font-size: 0.78rem; color: #64748b; align-self: center;">Disaster Presets:</span>
+              <button class="preset-btn" data-preset="heatwave">🔥 Extreme Heatwave</button>
+              <button class="preset-btn" data-preset="monsoon">🌊 Monsoon Inundation</button>
+              <button class="preset-btn" data-preset="cyclone">🌀 Superstorm Cyclone</button>
+              <button class="preset-btn" data-preset="calm">🌿 Mild Spring Day</button>
+            </div>
+          </div>
+
+          <!-- Right: Real-Time Simulation AI Scorecard -->
+          <div style="background: rgba(11, 15, 25, 0.6); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--border-subtle);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #38bdf8; font-weight: 700;">Simulated AI Output</span>
+              <span style="font-size: 0.75rem; color: #94a3b8;">Instant Model Classification</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 18px;">
+              <div id="simScoreCircle" class="risk-score-circle" style="width: 76px; height: 76px; border-color: #f59e0b;">
+                <span id="simScoreNum" class="score-num" style="font-size: 1.6rem;">38</span>
+                <span class="score-label">Score</span>
+              </div>
+              <div>
+                <h3 id="simRiskLevel" style="font-family: var(--font-display); font-size: 1.25rem; color: #f59e0b;">Moderate Risk</h3>
+                <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">
+                  Real-time Scikit-Learn Decision Boundary
+                </div>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;">
+              <div style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 0.72rem; color: #94a3b8;">Heavy Rain</div>
+                <span id="simRainBadge" class="hazard-badge badge-low" style="margin-top: 4px;">Low</span>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 0.72rem; color: #94a3b8;">Extreme Heat</div>
+                <span id="simHeatBadge" class="hazard-badge badge-moderate" style="margin-top: 4px;">Moderate</span>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 0.72rem; color: #94a3b8;">Flood Risk</div>
+                <span id="simFloodBadge" class="hazard-badge badge-low" style="margin-top: 4px;">Low</span>
+              </div>
+            </div>
+
+            <div id="simExplanation" class="natural-explanation-box" style="font-size: 0.78rem;">
+              Simulation assessment dynamically synthesized.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Historical Assessments & SQLite Database Section -->
+    <section style="margin-top: 24px;" aria-labelledby="historyHeading">
+      <div class="glass-card">
+        <div class="card-header-flex">
+          <div class="card-title-group">
+            <span class="card-icon">🗄️</span>
+            <h2 id="historyHeading">Historical Risk Assessments & SQL Database Records</h2>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="btnExportCsv" class="btn-icon" style="width: auto; padding: 6px 12px; font-size: 0.8rem; gap: 6px;" title="Export SQLite Data to CSV">
+              📥 Export CSV
+            </button>
+            <button id="btnExportJson" class="btn-icon" style="width: auto; padding: 6px 12px; font-size: 0.8rem; gap: 6px;" title="Export SQLite Data to JSON">
+              📄 Export JSON
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Location</th>
+                <th>Temp</th>
+                <th>24h Rain</th>
+                <th>Rain Risk</th>
+                <th>Heat Risk</th>
+                <th>Flood Risk</th>
+                <th>Composite Score</th>
+                <th>Logged At</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <!-- Dynamically populated from SQLite -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- AI Model Transparency & Metrics Modal -->
+  <div id="modalMetrics" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-dialog">
+      <button id="btnCloseMetrics" class="modal-close-btn" aria-label="Close modal">✕</button>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
+        <span style="font-size: 1.6rem;">🔬</span>
+        <h3 id="modalTitle" style="font-family: var(--font-display); font-size: 1.4rem;">AI Model Metrics & Transparency</h3>
+      </div>
+      
+      <div id="metricsModalContent">
+        <!-- Loaded via API -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <div>
+        <strong style="color: #f1f5f9; font-size: 1rem; font-family: var(--font-display);">ClimaShield AI Early Warning System</strong>
+        <div style="margin-top: 4px; max-width: 500px;">
+          Empowering disaster resilience through Machine Learning risk assessment, live meteorological tracking, and automated civilian early warnings.
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 24px; font-size: 0.8rem;">
+        <div>
+          <span style="display: block; color: #cbd5e1; font-weight: 600;">Data Source</span>
+          <span>Open-Meteo API</span>
+        </div>
+        <div>
+          <span style="display: block; color: #cbd5e1; font-weight: 600;">AI Framework</span>
+          <span>Scikit-Learn Ensemble</span>
+        </div>
+        <div>
+          <span style="display: block; color: #cbd5e1; font-weight: 600;">Database</span>
+          <span>SQLite / PostgreSQL</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Application Scripts -->
+  <script src="/static/js/charts.js"></script>
+  <script src="/static/js/map.js"></script>
+  <script src="/static/js/simulator.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
